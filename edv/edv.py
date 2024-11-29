@@ -7,9 +7,29 @@ import argparse
 import importlib.resources as pkg_resources
 import yaml
 import numpy as np
-from os import path
+from os import path, makedirs
 from PIL import Image, ImageEnhance
 import requests
+from zipfile import ZipFile, BadZipFile
+from io import BytesIO
+
+TEMPLATE_ARCHIVE = "https://raw.githubusercontent.com/jt-lab/edv/a3c51fa270338c04bf6d91d6e66c1e04f1603209/templates.zip"
+
+
+def download_and_extract_zip(url, destination):
+    try:
+        print(f"Downloading templates from {url}...")
+        response = requests.get(url)
+        response.raise_for_status()
+
+        with ZipFile(BytesIO(response.content)) as zip_file:
+            zip_file.extractall(destination)
+            print(f"Templates successfully downloaded and extracted to: {destination}")
+
+    except requests.RequestException as e:
+        print(f"Failed to download the zip file: {e}")
+    except BadZipFile as e:
+        print(f"Failed to extract the zip file: {e}")
 
 def find_coeffs(source_coords, target_coords):
     # Based on: https://stackoverflow.com/questions/53032270/perspective-transform-with-python-pil-using-src-target-coordinates
@@ -25,9 +45,9 @@ def find_coeffs(source_coords, target_coords):
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--template",
+    parser.add_argument("-t", "--template", required=True,
         help="Template to be used")
-    parser.add_argument("-d", "--display",
+    parser.add_argument("-d", "--display",required=True,
         help="Display to be transformed onto the base image")
     parser.add_argument("-b", "--brightness",
         help="Brightness adjustment; 0 is full black, values larger than one increase brightness")
@@ -36,10 +56,27 @@ def main():
     parser.add_argument("-s", "--show", action="store_true",
         help="If provided, image is shown and not saved!")
 
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit as e:
+            return
 
     if args.out is None:
         args.out = "Figure_" + args.display
+
+    # Check if template folder exists
+    template_folder = path.join(path.expanduser("~"), "edv_templates")
+
+    if not path.exists(template_folder):
+        while True:
+            response = input("No template directory '~/edv_templates' detected. Create the directory and download templates? [y/n]: ").strip().lower()
+            if response in {'y', 'n'}:
+                break
+        if response == 'y':
+               makedirs(template_folder)
+               download_and_extract_zip(TEMPLATE_ARCHIVE, template_folder)
+    
+    
 
     # Load the user-provided display
     display_img = Image.open(args.display).convert("RGBA")
