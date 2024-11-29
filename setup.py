@@ -18,7 +18,7 @@ setup(
         ],
     },
     install_requires=[
-        'pillow<10',
+        'pillow',
         'numpy',                     
         'pyyaml',
         'argparse'

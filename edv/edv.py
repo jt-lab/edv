@@ -13,7 +13,7 @@ import requests
 from zipfile import ZipFile, BadZipFile
 from io import BytesIO
 
-TEMPLATE_ARCHIVE = "https://raw.githubusercontent.com/jt-lab/edv/a3c51fa270338c04bf6d91d6e66c1e04f1603209/templates.zip"
+TEMPLATE_ARCHIVE = "https://raw.githubusercontent.com/jt-lab/edv/refs/heads/main/templates.zip"
 
 
 def download_and_extract_zip(url, destination):
@@ -62,7 +62,7 @@ def main():
             return
 
     if args.out is None:
-        args.out = "Figure_" + args.display
+        args.out = "Figure_" + path.basename(args.display)
 
     # Check if template folder exists
     template_folder = path.join(path.expanduser("~"), "edv_templates")
@@ -76,8 +76,6 @@ def main():
                makedirs(template_folder)
                download_and_extract_zip(TEMPLATE_ARCHIVE, template_folder)
     
-    
-
     # Load the user-provided display
     display_img = Image.open(args.display).convert("RGBA")
 
@@ -87,20 +85,20 @@ def main():
         display_img = bf.enhance(float(args.brightness))
 
     # Load base image from template
-    with pkg_resources.path('edv.templates.'+ args.template, "base.png") as base_path:
-        base_img = Image.open(base_path).convert("RGBA")
+    base_path = path.join(template_folder,  args.template, "base.png")
+    base_img = Image.open(base_path).convert("RGBA")
 
     # Load the mask if the template has one
-    with pkg_resources.path('edv.templates.'+ args.template, "mask.png") as mask_path:
-        if path.exists(mask_path):
-            mask = Image.open(path.join("templates", args.template, "mask.png")).convert("L")
-        else:
-            mask = Image.new("L", base_img.size, 255)
+    mask_path = path.join(template_folder, args.template, "mask.png")
+    if path.exists(mask_path):
+        mask = Image.open(path.join(template_folder, args.template, "mask.png")).convert("L")
+    else:
+        mask = Image.new("L", base_img.size, 255)
 
     # Load coordinates from template
-    with pkg_resources.path('edv.templates.'+ args.template, "coords.yml") as coords_path:
-        with open(coords_path, "r") as file:
-            coords = yaml.safe_load(file)
+    coords_path = path.join(template_folder, args.template, "coords.yml")
+    with open(coords_path, "r") as file:
+        coords = yaml.safe_load(file)
 
     # Source coords cover the whole display image
     source_coords = [[0, 0], [display_img.width, 0],
