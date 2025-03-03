@@ -3,7 +3,7 @@ import os
 
 setup(
     name='edv',
-    version='1.0.0',    
+    version='1.0.1',    
     description='Experiment Display Visualizer',
     url='',
     author='Jan Tünnermann',
